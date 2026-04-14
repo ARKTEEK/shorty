@@ -14,18 +14,26 @@ import (
 
 func New(db *sql.DB, cfg *config.Config) *http.Server {
 	userSvc := services.NewUserService(db)
+	authSvc := services.NewAuthService(db, userSvc)
 	userHandler := handlers.NewUserHandler(userSvc)
+	authHandler := handlers.NewAuthHandler(authSvc)
 
 	r := chi.NewRouter()
 
 	r.Use(chimw.RequestID)
 	r.Use(chimw.Recoverer)
+	r.Use(chimw.CleanPath)
 
 	r.Route("/api/v1", func(r chi.Router) {
+
+		r.Route("/auth", func(r chi.Router) {
+			r.Post("/register", authHandler.Register)
+			r.Post("/login", authHandler.Login)
+			r.Post("/deactivate", authHandler.Deactivate)
+		})
+
 		r.Route("/users", func(r chi.Router) {
-			r.Post("/", userHandler.CreateUser)
 			r.Patch("/update", userHandler.UpdateUser)
-			r.Patch("/deactivate", userHandler.DeactivateUser)
 
 			r.Route("/{id}", func(r chi.Router) {
 				r.Get("/", userHandler.GetUser)

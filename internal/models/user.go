@@ -17,7 +17,3 @@ type UpdateUserRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
-
-type DeactivateUserRequest struct {
-	Email string `json:"email"`
-}
