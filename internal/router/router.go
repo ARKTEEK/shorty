@@ -23,12 +23,12 @@ func New(db *sql.DB, cfg *config.Config) *http.Server {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Route("/users", func(r chi.Router) {
-			// r.Get("/", userHandler.ListUsers)
 			r.Post("/", userHandler.CreateUser)
+			r.Patch("/update", userHandler.UpdateUser)
+			r.Patch("/deactivate", userHandler.DeactivateUser)
 
 			r.Route("/{id}", func(r chi.Router) {
 				r.Get("/", userHandler.GetUser)
-				// r.Delete("/", userHandler.DeleteUser)
 			})
 		})
 	})
