@@ -32,7 +32,7 @@ func New(db *sql.DB, cfg *config.Config) *http.Server {
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", authHandler.Register)
 			r.Post("/login", authHandler.Login)
-			r.Post("/deactivate", authHandler.Deactivate)
+			r.With(middleware.JWTAuth).Post("/deactivate", authHandler.Deactivate)
 		})
 
 		r.Route("/users", func(r chi.Router) {

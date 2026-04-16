@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/ARKTEEK/shorty/internal/middleware"
 	"github.com/ARKTEEK/shorty/internal/models"
 	"github.com/ARKTEEK/shorty/internal/services"
 )
@@ -48,15 +49,26 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) Deactivate(w http.ResponseWriter, r *http.Request) {
-	var req models.DeactivateRequest
-	if err := DecodeBody(r, &req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized.", http.StatusUnauthorized)
 		return
 	}
 
-	success, err := h.auth.Deactivate(r.Context(), req)
+	var req models.DeactivateRequest
+	if err := DecodeBody(r, &req); err != nil {
+		http.Error(w, "Invalid request body.", http.StatusBadRequest)
+		return
+	}
+
+	request := &models.DeactivateRequest{
+		UserID:   userID,
+		Password: req.Password,
+	}
+
+	success, err := h.auth.Deactivate(r.Context(), request)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 

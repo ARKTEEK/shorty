@@ -23,7 +23,7 @@ func NewAuthService(db *sql.DB, us *UserService) *AuthService {
 func (s *AuthService) Login(ctx context.Context, request models.AuthRequest) (*models.LoginResponse, error) {
 	exists, err := s.us.Exists(ctx, request.Email)
 	if err != nil {
-		return nil, fmt.Errorf("check existence: %w", err)
+		return nil, fmt.Errorf("Check existence: %w", err)
 	}
 
 	if !exists {
@@ -46,7 +46,7 @@ func (s *AuthService) Login(ctx context.Context, request models.AuthRequest) (*m
 
 	token, err := middleware.GenerateToken(userID)
 	if err != nil {
-		return nil, fmt.Errorf("generate token: %w", err)
+		return nil, fmt.Errorf("Generate token: %w", err)
 	}
 
 	return &models.LoginResponse{
@@ -60,7 +60,7 @@ func (s *AuthService) Login(ctx context.Context, request models.AuthRequest) (*m
 func (s *AuthService) Register(ctx context.Context, request models.AuthRequest) (*models.RegisterResponse, error) {
 	exists, err := s.us.Exists(ctx, request.Email)
 	if err != nil {
-		return nil, fmt.Errorf("check existence: %w", err)
+		return nil, fmt.Errorf("Check existence: %w", err)
 	}
 
 	if exists {
@@ -69,7 +69,7 @@ func (s *AuthService) Register(ctx context.Context, request models.AuthRequest) 
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, fmt.Errorf("hash password: %w", err)
+		return nil, fmt.Errorf("Hash password: %w", err)
 	}
 
 	result, err := s.db.ExecContext(ctx,
@@ -77,7 +77,7 @@ func (s *AuthService) Register(ctx context.Context, request models.AuthRequest) 
 		request.Email, string(hash),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("insert user: %w", err)
+		return nil, fmt.Errorf("Insert user: %w", err)
 	}
 
 	id, _ := result.LastInsertId()
@@ -88,26 +88,32 @@ func (s *AuthService) Register(ctx context.Context, request models.AuthRequest) 
 	}, nil
 }
 
-func (s *AuthService) Deactivate(ctx context.Context, request models.DeactivateRequest) (*models.DeactivateResponse, error) {
-	exists, err := s.us.Exists(ctx, request.Email)
+func (s *AuthService) Deactivate(ctx context.Context, request *models.DeactivateRequest) (*models.DeactivateResponse, error) {
+	var storedHash string
+
+	err := s.db.QueryRowContext(ctx,
+		`SELECT password FROM users WHERE id = ? AND active = true LIMIT 1`,
+		request.UserID,
+	).Scan(&storedHash)
+
 	if err != nil {
-		return nil, fmt.Errorf("check existence: %w", err)
+		return nil, errors.New("Invalid credentials.")
 	}
 
-	if !exists {
-		return nil, errors.New("User not found.")
+	if err := bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(request.Password)); err != nil {
+		return nil, errors.New("Invalid credentials.")
 	}
 
 	_, err = s.db.ExecContext(ctx,
-		`UPDATE users SET active = false WHERE email = ?`,
-		request.Email)
-
+		`UPDATE users SET active = false WHERE id = ?`,
+		request.UserID,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("deactivate user: %w", err)
+		return nil, fmt.Errorf("Deactivate user: %w", err)
 	}
 
 	return &models.DeactivateResponse{
 		Success: true,
-		Message: "User deactivated successfully.",
+		Message: "User deactivated successfully",
 	}, nil
 }
