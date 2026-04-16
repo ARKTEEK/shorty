@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/ARKTEEK/shorty/internal/middleware"
 	"github.com/ARKTEEK/shorty/internal/models"
 	"github.com/ARKTEEK/shorty/internal/services"
 	"github.com/go-chi/chi/v5"
@@ -18,9 +19,20 @@ func NewUserHandler(users *services.UserService) *UserHandler {
 }
 
 func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized.", http.StatusUnauthorized)
+		return
+	}
+
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		return
+	}
+
+	if userID != id {
+		http.Error(w, "Forbidden.", http.StatusForbidden)
 		return
 	}
 
@@ -34,9 +46,20 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized.", http.StatusUnauthorized)
+		return
+	}
+
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		return
+	}
+
+	if userID != id {
+		http.Error(w, "Forbidden.", http.StatusForbidden)
 		return
 	}
 
@@ -54,4 +77,3 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	WriteJSON(w, http.StatusOK, user)
 }
-

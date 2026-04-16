@@ -36,10 +36,10 @@ func New(db *sql.DB, cfg *config.Config) *http.Server {
 		})
 
 		r.Route("/users", func(r chi.Router) {
-			r.Patch("/update", userHandler.UpdateUser)
+			r.With(middleware.JWTAuth).Patch("/update", userHandler.UpdateUser)
 
 			r.Route("/{id}", func(r chi.Router) {
-				r.Get("/", userHandler.GetUser)
+				r.With(middleware.JWTAuth).Get("/", userHandler.GetUser)
 			})
 		})
 
