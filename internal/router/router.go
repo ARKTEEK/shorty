@@ -6,6 +6,7 @@ import (
 
 	"github.com/ARKTEEK/shorty/internal/config"
 	"github.com/ARKTEEK/shorty/internal/handlers"
+	"github.com/ARKTEEK/shorty/internal/middleware"
 	"github.com/ARKTEEK/shorty/internal/services"
 
 	"github.com/go-chi/chi/v5"
@@ -45,6 +46,9 @@ func New(db *sql.DB, cfg *config.Config) *http.Server {
 		r.Route("/links", func(r chi.Router) {
 			r.Post("/create", linkHandler.CreateShortLink)
 			r.Get("/{shortCode}", linkHandler.Redirect)
+
+			r.With(middleware.JWTAuth).Get("/mine", linkHandler.List)
+			r.With(middleware.JWTAuth).Delete("/{shortCode}", linkHandler.Delete)
 		})
 	})
 
