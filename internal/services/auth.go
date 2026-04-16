@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/ARKTEEK/shorty/internal/middleware"
 	"github.com/ARKTEEK/shorty/internal/models"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -26,26 +27,34 @@ func (s *AuthService) Login(ctx context.Context, request models.AuthRequest) (*m
 	}
 
 	if !exists {
-		return nil, fmt.Errorf("invalid credentials")
+		return nil, fmt.Errorf("Invalid credentials.")
 	}
 
-	var storedHash string
-	err = s.db.QueryRowContext(ctx, "SELECT password FROM users WHERE email = ?", request.Email).Scan(&storedHash)
+	var (
+		userID     int64
+		storedHash string
+	)
+	err = s.db.QueryRowContext(ctx, "SELECT id, password FROM users WHERE email = ? LIMIT 1", request.Email).
+		Scan(&userID, &storedHash)
 	if err != nil {
-		return nil, fmt.Errorf("invalid credentials")
+		return nil, fmt.Errorf("Invalid credentials.")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(request.Password)); err != nil {
-		return nil, fmt.Errorf("invalid credentials")
+		return nil, fmt.Errorf("Invalid credentials.")
+	}
+
+	token, err := middleware.GenerateToken(userID)
+	if err != nil {
+		return nil, fmt.Errorf("generate token: %w", err)
 	}
 
 	return &models.LoginResponse{
-		UserID:  1,
+		UserID:  userID,
 		Email:   request.Email,
-		Token:   fmt.Sprintf("token-%d", 12345),
-		Message: "Login successful",
+		Token:   token,
+		Message: "Login successful.",
 	}, nil
-
 }
 
 func (s *AuthService) Register(ctx context.Context, request models.AuthRequest) (*models.RegisterResponse, error) {
@@ -75,7 +84,7 @@ func (s *AuthService) Register(ctx context.Context, request models.AuthRequest) 
 	return &models.RegisterResponse{
 		ID:       id,
 		Username: request.Email,
-		Message:  "Registration successful",
+		Message:  "Registration successful.",
 	}, nil
 }
 
@@ -86,7 +95,7 @@ func (s *AuthService) Deactivate(ctx context.Context, request models.DeactivateR
 	}
 
 	if !exists {
-		return nil, errors.New("User not found!")
+		return nil, errors.New("User not found.")
 	}
 
 	_, err = s.db.ExecContext(ctx,
@@ -99,6 +108,6 @@ func (s *AuthService) Deactivate(ctx context.Context, request models.DeactivateR
 
 	return &models.DeactivateResponse{
 		Success: true,
-		Message: "User deactivated successfully",
+		Message: "User deactivated successfully.",
 	}, nil
 }

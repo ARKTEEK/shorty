@@ -9,12 +9,12 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
-		Addr:        getEnv("ADDR", ":8080"),
-		DatabaseUrl: getEnv("DATABASE_URL", "root:Pass123..@tcp(localhost:3306)/shorty?parseTime=true"),
+		Addr:        GetEnv("ADDR", ":8080"),
+		DatabaseUrl: GetEnv("DATABASE_URL", "root:Pass123..@tcp(localhost:3306)/shorty?parseTime=true"),
 	}
 }
 
-func getEnv(key, fallback string) string {
+func GetEnv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
 	}
