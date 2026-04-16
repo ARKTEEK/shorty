@@ -15,8 +15,10 @@ import (
 func New(db *sql.DB, cfg *config.Config) *http.Server {
 	userSvc := services.NewUserService(db)
 	authSvc := services.NewAuthService(db, userSvc)
+	linkSvc := services.NewLinkService(db, userSvc)
 	userHandler := handlers.NewUserHandler(userSvc)
 	authHandler := handlers.NewAuthHandler(authSvc)
+	linkHandler := handlers.NewLinkHandler(linkSvc)
 
 	r := chi.NewRouter()
 
@@ -38,6 +40,11 @@ func New(db *sql.DB, cfg *config.Config) *http.Server {
 			r.Route("/{id}", func(r chi.Router) {
 				r.Get("/", userHandler.GetUser)
 			})
+		})
+
+		r.Route("/links", func(r chi.Router) {
+			r.Post("/create", linkHandler.CreateShortLink)
+			r.Get("/{shortCode}", linkHandler.Redirect)
 		})
 	})
 
